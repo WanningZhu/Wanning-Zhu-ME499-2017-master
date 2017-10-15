@@ -3,7 +3,7 @@
 #include <xc.h>
 #include <string.h>
 #include <math.h>
-#define DEG_PER_CORE 0.0009 // equal to (180 deg) / (8333 us) / (24 core tick per us)
+#define DEG_PER_CORE 0.00054 // equal to (180 deg) / (8333 us) / (40 core tick per us)
 #define LIGHTHOUSEHEIGHT 7.0 // in feet
 #define DEG_TO_RAD 0.01745 // pi/180
 
@@ -49,12 +49,7 @@ void __ISR(_INPUT_CAPTURE_1_VECTOR, IPL3SOFT) No1SensorIC1(){
         if ((V1.changeTime[1] - V1.changeTime[0] > 7000 * 24) && (V1.changeTime[3] - V1.changeTime[2] > 7000 * 24) && (V1.changeTime[6] - V1.changeTime[5] < 50 * 24) && (V1.changeTime[10] - V1.changeTime[9] < 50 * 24)) {
             V1.horzAng = (V1.changeTime[5] - V1.changeTime[4]) * DEG_PER_CORE;
             V1.vertAng = (V1.changeTime[9] - V1.changeTime[8]) * DEG_PER_CORE;
-            V1.useMe = 1; 
-
-         //    double xPos = tan((V1.vertAng - 90.0) * DEG_TO_RAD) * LIGHTHOUSEHEIGHT;
-         //    double yPos = tan((V1.horzAng - 90.0) * DEG_TO_RAD) * LIGHTHOUSEHEIGHT;
-         //    sprintf(buffer,"x=%f, y= %f\r\n",xPos,yPos);
-	        // NU32_WriteUART3(buffer);
+            V1.useMe = 1;
         }
     }
     V1.prevMic = mic;
@@ -86,11 +81,6 @@ void __ISR(_INPUT_CAPTURE_2_VECTOR, IPL4SOFT) No2SensorIC2(){
             V2.horzAng = (V2.changeTime[5] - V2.changeTime[4]) * DEG_PER_CORE;
             V2.vertAng = (V2.changeTime[9] - V2.changeTime[8]) * DEG_PER_CORE;
             V2.useMe = 1; 
-
-            double xPos = tan((V2.vertAng - 90.0) * DEG_TO_RAD) * LIGHTHOUSEHEIGHT;
-            double yPos = tan((V2.horzAng - 90.0) * DEG_TO_RAD) * LIGHTHOUSEHEIGHT;
-            sprintf(buffer,"x=%f, y= %f\r\n",xPos,yPos);
-	        NU32_WriteUART3(buffer);
         }
     }
     V2.prevMic = mic;
@@ -189,7 +179,13 @@ int main (){
     IEC0bits.IC3IE = 1; //enable IC3 interrupt
     __builtin_enable_interrupts();
     while (1){
-    	;
+    	if (V1.useMe == 1 && V2.useMe == 1 && V3.useMe == 1){
+            sprintf(buffer,"vertAng: %4.2f  %4.2f  %4.2f\r\nhorzAng: %4.2f  %4.2f  %4.2f\r\n",V1.vertAng,V2.vertAng,V3.vertAng,V1.horzAng,V2.horzAng,V3.horzAng);
+            NU32_WriteUART3(buffer);
+            V1.useMe = 0;
+            V2.useMe = 0;
+            V3.useMe = 0;
+        }
     }
     return 0;
 }
